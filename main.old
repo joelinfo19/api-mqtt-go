@@ -1,0 +1,280 @@
+package main
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	MQTT "github.com/eclipse/paho.mqtt.golang"
+	"net/http"
+	"os"
+)
+
+
+
+func main(){
+	// Connect to MQTT broker
+	var broker = "broker.mqttdashboard.com"
+	var port = 1883
+	opts := MQTT.NewClientOptions().AddBroker(fmt.Sprintf("tcp://%s:%d",broker,port))
+	opts.SetClientID("clientId-i3zf3Qj")
+	opts.SetDefaultPublishHandler(onMessageReceived)
+	client := MQTT.NewClient(opts)
+	if token := client.Connect(); token.Wait() && token.Error() != nil {
+		panic(token.Error())
+	}
+
+	// Subscribe to topic
+	if token := client.Subscribe("topic/example", 0, nil);
+	token.Wait() && token.Error() != nil {
+		fmt.Println(token.Error())
+		os.Exit(1)
+	}
+
+	select{}
+}
+
+func onMessageReceived(client MQTT.Client, message MQTT.Message) {
+	var msg map[string]interface{}
+	json.Unmarshal(message.Payload(), &msg)
+	//data :=
+	//data := msg["data"]
+	//print
+	//data := msg["data"].(string)
+	//id:=msg["id"]
+
+	//fmt.Println(data)
+	//fmt.Println(id)
+
+	//if data, ok := msg["data"].(string); ok {
+	//	// Enviar petición POST a la API con el valor de "data"
+	//	http.Post("http://localhost:8080/pstprnt", "application/json", strings.NewReader(data))
+	//	fmt.Println(strings.NewReader(data))
+	//} else {
+	//	fmt.Println("No se encontró la clave 'data' o es nula")
+	//}
+	//if err != nil {
+	//	fmt.Println(err)
+	//} else {
+	//	fmt.Println(resp)
+	//}
+	//fmt.Println( id)
+	//_, err := http.Post("http://localhost:8080/pstprnt", "application/json", bytes.NewBuffer(data.([]byte)))
+	//if err != nil {
+	//	fmt.Println(err)
+	//}
+	// Send POST request to API
+	if data, ok := msg["data"].(string); ok {
+		_, err := http.Post("http://localhost:8080/pstprnt", "application/json", bytes.NewBuffer([]byte(data)))
+		println(data)
+		if err != nil {
+			fmt.Println(err)
+		}
+	} else {
+		fmt.Println("data not found or is not a string")
+	}
+}
+package main
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	MQTT "github.com/eclipse/paho.mqtt.golang"
+	"net/http"
+	"os"
+)
+
+
+
+func main(){
+	// Connect to MQTT broker
+	var broker = "broker.mqttdashboard.com"
+	var port = 1883
+	opts := MQTT.NewClientOptions().AddBroker(fmt.Sprintf("tcp://%s:%d",broker,port))
+	opts.SetClientID("clientId-i3zf3Qj")
+	opts.SetDefaultPublishHandler(onMessageReceived)
+	client := MQTT.NewClient(opts)
+	if token := client.Connect(); token.Wait() && token.Error() != nil {
+		panic(token.Error())
+	}
+
+	// Subscribe to topic
+	if token := client.Subscribe("topic/example", 0, nil);
+	token.Wait() && token.Error() != nil {
+		fmt.Println(token.Error())
+		os.Exit(1)
+	}
+	//select{}
+	http.ListenAndServe(":8000", nil)
+}
+type RequestBody struct {
+	Data string `json:"data"`
+}
+type StatusBody struct {
+	Id float64 `json:"id"`
+	Status int `json:"status"`
+}
+func onMessageReceived(client MQTT.Client, message MQTT.Message) {
+	var msg map[string]interface{}
+	json.Unmarshal(message.Payload(), &msg)
+	//id:=msg["id"].(int)
+	// Send POST request to API
+	//if data, ok := msg["data"].(string); ok {
+	//	_, err := http.Post("http://localhost:8080/pstprnt", "application/json", bytes.NewBuffer([]byte(data)))
+	//	println(data)
+	//	if err != nil {
+	//		fmt.Println(err)
+	//	}
+	//} else {
+	//	fmt.Println("data not found or is not a string")
+	//}
+	//Format json
+	if data, ok := msg["data"].(string); ok {
+		jsonData, err := json.Marshal(RequestBody{Data:data})
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		//fmt.Println(data)
+		res, err := http.Post("http://localhost:8080/pstprnt", "application/json", bytes.NewBuffer(jsonData))
+		if err != nil {
+			fmt.Println(err)
+			token := client.Publish("/printer/state", 0, false, err)
+			token.Wait()
+		}
+		status:=res.StatusCode
+		statusBody := StatusBody{
+			Id:     msg["id"].(float64),
+			Status: status,
+		}
+		statusBodyJson, err := json.Marshal(statusBody)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		//defer res.Body.Close()
+		fmt.Println("Status:", res.StatusCode)
+
+		token := client.Publish("/printer/state", 0, false, statusBodyJson)
+		token.Wait()
+		fmt.Println(data)
+		if token.Error() != nil {
+			fmt.Println(token.Error())
+		}
+
+	} else {
+		fmt.Println("data not found or is not a string")
+	}
+}
+func publish(client MQTT.Client) {
+
+		text := fmt.Sprintf("Message %d", "error")
+		token := client.Publish("topic/test", 0, false, text)
+		token.Wait()
+}
+
+///new
+
+package main
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	MQTT "github.com/eclipse/paho.mqtt.golang"
+	"net/http"
+	"os"
+)
+
+
+
+func main(){
+	// Connect to MQTT broker
+	var broker = "broker.mqttdashboard.com"
+	var port = 1883
+	opts := MQTT.NewClientOptions().AddBroker(fmt.Sprintf("tcp://%s:%d",broker,port))
+	opts.SetClientID("clientId-i3zf3Qj")
+	opts.SetDefaultPublishHandler(onMessageReceived)
+	client := MQTT.NewClient(opts)
+	if token := client.Connect(); token.Wait() && token.Error() != nil {
+		panic(token.Error())
+	}
+
+	// Subscribe to topic
+	if token := client.Subscribe("topic/example", 0, nil);
+	token.Wait() && token.Error() != nil {
+		fmt.Println(token.Error())
+		os.Exit(1)
+	}
+	//select{}
+	http.ListenAndServe(":8000", nil)
+}
+type RequestBody struct {
+	Data string `json:"data"`
+}
+type StatusBody struct {
+	Id float64 `json:"id"`
+	Status int `json:"status"`
+}
+func onMessageReceived(client MQTT.Client, message MQTT.Message) {
+	var msg map[string]interface{}
+	json.Unmarshal(message.Payload(), &msg)
+	//id:=msg["id"].(int)
+	// Send POST request to API
+	//if data, ok := msg["data"].(string); ok {
+	//	_, err := http.Post("http://localhost:8080/pstprnt", "application/json", bytes.NewBuffer([]byte(data)))
+	//	println(data)
+	//	if err != nil {
+	//		fmt.Println(err)
+	//	}
+	//} else {
+	//	fmt.Println("data not found or is not a string")
+	//}
+	//Format json
+	if data, ok := msg["data"].(string); ok {
+		jsonData, err := json.Marshal(RequestBody{Data:data})
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		//fmt.Println(data)
+		res, err := http.Post("http://localhost:8080/pstprnt", "application/json", bytes.NewBuffer(jsonData))
+		if err != nil {
+			fmt.Println(err)
+			//token := client.Publish("/printer/state", 0, false, "NOOOOOO")
+			//fmt.Println("SUPERERROR")
+			//token.Wait()
+		}
+		status:=res.StatusCode
+		statusBody := StatusBody{
+			Id:     msg["id"].(float64),
+			Status: status,
+		}
+		statusBodyJson, err := json.Marshal(statusBody)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		//defer res.Body.Close()
+		fmt.Println("Status:", res.StatusCode)
+		if status==200 {
+			token := client.Publish("/printer/state", 0, false, statusBodyJson)
+			token.Wait()
+			fmt.Println(data)
+			if token.Error() != nil {
+				fmt.Println(token.Error())
+			}
+		} else{
+			token := client.Publish("/printer/state", 0, false, statusBodyJson)
+			token.Wait()
+			fmt.Println(data)
+			if token.Error() != nil {
+				fmt.Println(token.Error())
+			}
+		}
+
+
+	} else {
+		fmt.Println("data not found or is not a string")
+	}
+}

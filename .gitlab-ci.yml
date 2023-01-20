@@ -1,0 +1,93 @@
+variables:
+  PROJECT: api-printer
+
+stages:
+  - version
+  - testing
+  - build
+  - documentation
+  - upload
+  - deploy
+
+version:
+  stage: version
+  image: golang:latest
+  only:
+    - develop
+    - master
+    - alfa
+  script:
+    - VERSION=$(date +%Y%m%d%H%M%S)
+    - echo "VERSION=$VERSION" >> build.env
+    - cat build.env
+  tags:
+    - golang+
+  artifacts:
+    paths:
+      - build.env
+    reports:
+      dotenv: build.env
+
+#testing-dev:
+#  stage: testing
+#  #  image: golang:latest
+#  only:
+#    - develop
+#    - master
+#  script:
+#    - cd modules/purchases && go test -v ./... && cd ../../
+#  tags:
+#    - general
+
+build-dev:
+  stage: build
+  image: golang:1.19
+  only:
+    - develop
+    - master
+    - alfa
+  script:
+    - CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o main .
+    - ls -alh
+  tags:
+    - golang+
+  artifacts:
+    paths:
+      - main
+
+#swagger:
+#  stage: documentation
+#  image: golang:1.19
+#  only:
+#    - develop
+#    - master
+#    - alfa
+#  script:
+#    - go install github.com/swaggo/swag/cmd/swag@latest
+#    - cd api
+#    - swag init --pd
+#    - >
+#      curl -X POST http://192.168.71.200:8080/api/convert -d @docs/swagger.json --header 'Content-Type: application/json' > ../openapi.json
+#  tags:
+#    - golang+
+#  artifacts:
+#    paths:
+#      - openapi.json
+
+upload-dev:
+  stage: upload
+  image: docker
+  only:
+    - develop
+    - master
+    - alfa
+  tags:
+    - golang+
+  script:
+    - ls -alh
+    - echo $VERSION
+    - echo $REGISTRY_SCP_PASSWORD | docker login $REGISTRY_SCP -u $REGISTRY_SCP_USER --password-stdin
+    - sed -ie "s/VERSION_BUILD/$VERSION/g" cicd/run.sh
+    - docker build -t $PROJECT:$VERSION -f cicd/dev/Dockerfile .
+    - docker tag $PROJECT:$VERSION $REGISTRY_SCP/$PROJECT:$VERSION
+    - docker push $REGISTRY_SCP/$PROJECT:$VERSION
