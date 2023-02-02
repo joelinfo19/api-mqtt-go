@@ -1,6 +1,6 @@
-##Setup Snippet
+## Setup Snippet
 
-####First you need to open Settings or press Ctrl+Alt+s.
+#### First you need to open Settings or press Ctrl+Alt+s.
 Open Live Templates
 ```
 File
