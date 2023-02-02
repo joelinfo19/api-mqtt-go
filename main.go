@@ -1,3 +1,17 @@
+/*
+ * File: main.go
+ * Author: User
+ * Copyright: 2023, Smart Cities Peru.
+ * License: MIT
+ *
+ * Purpose:
+ * This is the entry point for the application.
+ *
+ * Last Modified: 2023-02-02
+ */
+
+
+
 package main
 
 import (
